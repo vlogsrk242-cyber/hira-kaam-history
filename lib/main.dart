@@ -8,6 +8,26 @@ void main() {
   runApp(const HiraKaamHistoryApp());
 }
 
+// ================= APP =================
+
+class HiraKaamHistoryApp extends StatelessWidget {
+  const HiraKaamHistoryApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'હિરા કામ હિસ્ટરી',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.blue,
+        scaffoldBackgroundColor: const Color(0xfff5f7fb),
+      ),
+      home: const SignUpPage(),
+    );
+  }
+}
+
 // ================= MODELS =================
 
 class Worker {
@@ -57,7 +77,7 @@ class WorkRecord {
     required this.rate,
   });
 
-  double get totalWork => diamonds * rate;
+  double get total => diamonds * rate;
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -114,9 +134,13 @@ class WithdrawalRecord {
   }
 }
 
-// ================= DATABASE =================
+// ================= DATA =================
 
-class AppData extends ChangeNotifier {
+class AppData {
+  AppData._();
+
+  static final AppData instance = AppData._();
+
   List<Worker> workers = [];
   List<WorkRecord> works = [];
   List<WithdrawalRecord> withdrawals = [];
@@ -145,8 +169,6 @@ class AppData extends ChangeNotifier {
           .map((e) => WithdrawalRecord.fromJson(e))
           .toList();
     }
-
-    notifyListeners();
   }
 
   Future<void> save() async {
@@ -166,80 +188,28 @@ class AppData extends ChangeNotifier {
       'withdrawals',
       jsonEncode(withdrawals.map((e) => e.toJson()).toList()),
     );
-
-    notifyListeners();
   }
 
   Worker? getWorker(String id) {
-    for (final worker in workers) {
-      if (worker.id == id) return worker;
+    try {
+      return workers.firstWhere((w) => w.id == id);
+    } catch (_) {
+      return null;
     }
-    return null;
   }
 }
 
-final appData = AppData();
+// ================= SIGN UP =================
 
-// ================= APP =================
-
-class HiraKaamHistoryApp extends StatefulWidget {
-  const HiraKaamHistoryApp({super.key});
+class SignUpPage extends StatefulWidget {
+  const SignUpPage({super.key});
 
   @override
-  State<HiraKaamHistoryApp> createState() => _HiraKaamHistoryAppState();
+  State<SignUpPage> createState() => _SignUpPageState();
 }
 
-class _HiraKaamHistoryAppState extends State<HiraKaamHistoryApp> {
-  @override
-  void initState() {
-    super.initState();
-    appData.load();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: appData,
-      builder: (context, child) {
-        return MaterialApp(
-          debugShowCheckedModeBanner: false,
-          title: 'હિરા કામ હિસ્ટરી',
-          theme: ThemeData(
-            useMaterial3: true,
-            colorSchemeSeed: Colors.blue,
-          ),
-          home: const LoginPage(),
-        );
-      },
-    );
-  }
-}
-
-// ================= LOGIN =================
-
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
-
-  @override
-  State<LoginPage> createState() => _LoginPageState();
-}
-
-class _LoginPageState extends State<LoginPage> {
+class _SignUpPageState extends State<SignUpPage> {
   final mobileController = TextEditingController();
-
-  void login() {
-    if (mobileController.text.length != 10) {
-      showMessage(context, '10 અંકનો મોબાઇલ નંબર નાખો');
-      return;
-    }
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const OtpPage(),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -253,35 +223,51 @@ class _LoginPageState extends State<LoginPage> {
                 const Icon(
                   Icons.diamond,
                   size: 80,
+                  color: Colors.blue,
                 ),
-                const SizedBox(height: 15),
+                const SizedBox(height: 20),
                 const Text(
                   'હિરા કામ હિસ્ટરી',
                   style: TextStyle(
-                    fontSize: 28,
+                    fontSize: 30,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text('Sheth App'),
-                const SizedBox(height: 35),
+                const Text('શેઠ એપ'),
+                const SizedBox(height: 40),
                 TextField(
                   controller: mobileController,
                   keyboardType: TextInputType.phone,
                   maxLength: 10,
                   decoration: const InputDecoration(
                     labelText: 'મોબાઇલ નંબર',
-                    prefixText: '+91 ',
+                    prefixIcon: Icon(Icons.phone),
                     border: OutlineInputBorder(),
                   ),
                 ),
-                const SizedBox(height: 15),
+                const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
                   height: 52,
                   child: FilledButton(
-                    onPressed: login,
-                    child: const Text('OTP Verification'),
+                    onPressed: () {
+                      if (mobileController.text.length != 10) {
+                        showMessage(context, '10 અંકનો મોબાઇલ નંબર નાખો');
+                        return;
+                      }
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const OtpPage(),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      'OTP Verification',
+                      style: TextStyle(fontSize: 17),
+                    ),
                   ),
                 ),
               ],
@@ -305,37 +291,19 @@ class OtpPage extends StatefulWidget {
 class _OtpPageState extends State<OtpPage> {
   final otpController = TextEditingController();
 
-  void verify() {
-    if (otpController.text.length != 6) {
-      showMessage(context, '6 અંકનો OTP નાખો');
-      return;
-    }
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const DashboardPage(),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('OTP Verification'),
-      ),
+      appBar: AppBar(title: const Text('OTP Verification')),
       body: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            const SizedBox(height: 30),
+            const Icon(Icons.verified_user, size: 70),
+            const SizedBox(height: 20),
             const Text(
-              'OTP નાખો',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+              'તમારો 6 અંકનો OTP નાખો',
+              style: TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 25),
             TextField(
@@ -343,17 +311,33 @@ class _OtpPageState extends State<OtpPage> {
               keyboardType: TextInputType.number,
               maxLength: 6,
               decoration: const InputDecoration(
-                labelText: '6 Digit OTP',
+                labelText: 'OTP',
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 15),
+            const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
               height: 52,
               child: FilledButton(
-                onPressed: verify,
-                child: const Text('Verify'),
+                onPressed: () async {
+                  if (otpController.text.length != 6) {
+                    showMessage(context, '6 અંકનો OTP નાખો');
+                    return;
+                  }
+
+                  await AppData.instance.load();
+
+                  if (!context.mounted) return;
+
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const MainDashboard(),
+                    ),
+                  );
+                },
+                child: const Text('Login'),
               ),
             ),
           ],
@@ -365,17 +349,17 @@ class _OtpPageState extends State<OtpPage> {
 
 // ================= DASHBOARD =================
 
-class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+class MainDashboard extends StatefulWidget {
+  const MainDashboard({super.key});
 
   @override
-  State<DashboardPage> createState() => _DashboardPageState();
+  State<MainDashboard> createState() => _MainDashboardState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
-  int selectedIndex = 0;
+class _MainDashboardState extends State<MainDashboard> {
+  int index = 0;
 
-  final sections = [
+  final sections = const [
     'તળીયા',
     'પેલ',
     'મથાળા',
@@ -383,22 +367,44 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    final pages = sections
+        .map(
+          (section) => SectionPage(
+            section: section,
+            refresh: () => setState(() {}),
+          ),
+        )
+        .toList();
+
+    pages.add(
+      WorkerPage(
+        refresh: () => setState(() {}),
+      ),
+    );
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('હિરા કામ હિસ્ટરી'),
+        title: const Text(
+          'હિરા કામ હિસ્ટરી',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
-            onPressed: () {
-              Navigator.push(
+            icon: const Icon(Icons.diamond),
+            tooltip: 'ટોટલ હીરા',
+            onPressed: () async {
+              await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => const TotalDiamondsPage(),
                 ),
               );
+              setState(() {});
             },
-            icon: const Icon(Icons.diamond),
           ),
           IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            tooltip: 'PDF',
             onPressed: () {
               Navigator.push(
                 context,
@@ -407,47 +413,44 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
               );
             },
-            icon: const Icon(Icons.picture_as_pdf),
           ),
         ],
       ),
-      body: selectedIndex < 3
-          ? SectionPage(
-              section: sections[selectedIndex],
-            )
-          : const WorkerPage(),
-      floatingActionButton: selectedIndex < 3
+      body: pages[index],
+      floatingActionButton: index < 3
           ? FloatingActionButton.extended(
-              onPressed: () {
-                Navigator.push(
+              onPressed: () async {
+                await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => WorkPage(
-                      section: sections[selectedIndex],
+                      section: sections[index],
                     ),
                   ),
                 );
+                setState(() {});
               },
               icon: const Icon(Icons.add),
-              label: const Text('કામ'),
+              label: const Text('કામ ઉમેરો'),
             )
           : FloatingActionButton.extended(
-              onPressed: () {
-                Navigator.push(
+              onPressed: () async {
+                await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => const WorkerFormPage(),
                   ),
                 );
+                setState(() {});
               },
               icon: const Icon(Icons.person_add),
-              label: const Text('કારીગર'),
+              label: const Text('કારીગર ઉમેરો'),
             ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: selectedIndex,
-        onDestinationSelected: (index) {
+        selectedIndex: index,
+        onDestinationSelected: (value) {
           setState(() {
-            selectedIndex = index;
+            index = value;
           });
         },
         destinations: const [
@@ -477,266 +480,248 @@ class _DashboardPageState extends State<DashboardPage> {
 
 class SectionPage extends StatelessWidget {
   final String section;
+  final VoidCallback refresh;
 
   const SectionPage({
     super.key,
     required this.section,
+    required this.refresh,
   });
 
   @override
   Widget build(BuildContext context) {
+    final data = AppData.instance;
+
     final works =
-        appData.works.where((e) => e.section == section).toList();
+        data.works.where((e) => e.section == section).toList();
 
     final withdrawals =
-        appData.withdrawals.where((e) => e.section == section).toList();
+        data.withdrawals.where((e) => e.section == section).toList();
 
     final totalDiamonds =
         works.fold<double>(0, (sum, e) => sum + e.diamonds);
 
     final totalWork =
-        works.fold<double>(0, (sum, e) => sum + e.totalWork);
+        works.fold<double>(0, (sum, e) => sum + e.total);
 
     final totalWithdrawal =
         withdrawals.fold<double>(0, (sum, e) => sum + e.amount);
 
-    return ListView(
-      padding: const EdgeInsets.all(12),
-      children: [
-        Row(
-          children: [
-            summaryCard(
-              'હીરા',
-              totalDiamonds.toStringAsFixed(0),
+    return RefreshIndicator(
+      onRefresh: () async => refresh(),
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text(
+            section,
+            style: const TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
             ),
-            summaryCard(
-              'ટોટલ કામ',
-              money(totalWork),
-            ),
-            summaryCard(
-              'ઉપાડ',
-              money(totalWithdrawal),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        // WORK
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.add_circle),
-            title: const Text('નવું કામ'),
-            subtitle: const Text('હીરા × ભાવ = ટોટલ કામ'),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => WorkPage(
-                    section: section,
-                  ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: SummaryCard(
+                  title: 'હીરા',
+                  value: formatNumber(totalDiamonds),
+                  icon: Icons.diamond,
                 ),
-              );
-            },
-          ),
-        ),
-
-        // WITHDRAWAL
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.payments),
-            title: const Text('ઉપાડ'),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => WithdrawalPage(
-                    section: section,
-                  ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: SummaryCard(
+                  title: 'ટોટલ કામ',
+                  value: money(totalWork),
+                  icon: Icons.currency_rupee,
                 ),
-              );
-            },
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: SummaryCard(
+                  title: 'ઉપાડ',
+                  value: money(totalWithdrawal),
+                  icon: Icons.payments,
+                ),
+              ),
+            ],
           ),
-        ),
-
-        const Divider(),
-
-        const Text(
-          'તારીખ પ્રમાણે કામ',
-          style: TextStyle(
-            fontSize: 19,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-
-        const SizedBox(height: 8),
-
-        ...works.reversed.map(
-          (work) => Card(
-            child: ListTile(
-              title: Text(
-                '${work.date} • ${appData.getWorker(work.workerId)?.name ?? "કારીગર"}',
-              ),
-              subtitle: Text(
-                '${work.diamonds.toStringAsFixed(0)} × '
-                '${money(work.rate)} = '
-                '${money(work.totalWork)}',
-              ),
-              trailing: PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'edit') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => WorkPage(
-                          section: section,
-                          oldRecord: work,
-                        ),
-                      ),
-                    );
-                  }
-
-                  if (value == 'delete') {
-                    appData.works.remove(work);
-                    appData.save();
-                  }
-                },
-                itemBuilder: (_) => const [
-                  PopupMenuItem(
-                    value: 'edit',
-                    child: Text('Edit'),
-                  ),
-                  PopupMenuItem(
-                    value: 'delete',
-                    child: Text('Delete'),
-                  ),
-                ],
-              ),
+          const SizedBox(height: 20),
+          const Text(
+            'કામની હિસ્ટરી',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
             ),
           ),
-        ),
-
-        const Divider(),
-
-        const Text(
-          'ઉપાડની હિસ્ટરી',
-          style: TextStyle(
-            fontSize: 19,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-
-        const SizedBox(height: 8),
-
-        ...withdrawals.reversed.map(
-          (withdrawal) => Card(
-            child: ListTile(
-              title: Text(
-                '${withdrawal.date} • '
-                '${appData.getWorker(withdrawal.workerId)?.name ?? "કારીગર"}',
-              ),
-              subtitle: Text(
-                'ઉપાડ: ${money(withdrawal.amount)}',
-              ),
-              trailing: PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'edit') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => WithdrawalPage(
-                          section: section,
-                          oldRecord: withdrawal,
-                        ),
-                      ),
-                    );
-                  }
-
-                  if (value == 'delete') {
-                    appData.withdrawals.remove(withdrawal);
-                    appData.save();
-                  }
-                },
-                itemBuilder: (_) => const [
-                  PopupMenuItem(
-                    value: 'edit',
-                    child: Text('Edit'),
-                  ),
-                  PopupMenuItem(
-                    value: 'delete',
-                    child: Text('Delete'),
-                  ),
-                ],
+          const SizedBox(height: 8),
+          if (works.isEmpty)
+            const EmptyCard(text: 'હજુ કોઈ કામ ઉમેરાયેલ નથી')
+          else
+            ...works.reversed.map(
+              (record) => WorkCard(
+                record: record,
+                onChanged: refresh,
               ),
             ),
+          const SizedBox(height: 20),
+          const Text(
+            'ઉપાડની હિસ્ટરી',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          if (withdrawals.isEmpty)
+            const EmptyCard(text: 'હજુ કોઈ ઉપાડ નથી')
+          else
+            ...withdrawals.reversed.map(
+              (record) => WithdrawalCard(
+                record: record,
+                onChanged: refresh,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
 
-// ================= WORKER =================
+// ================= SUMMARY CARD =================
 
-class WorkerPage extends StatelessWidget {
-  const WorkerPage({super.key});
+class SummaryCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final IconData icon;
+
+  const SummaryCard({
+    super.key,
+    required this.title,
+    required this.value,
+    required this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(12),
-      children: [
-        ...appData.workers.map(
-          (worker) => Card(
-            child: ListTile(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => WorkerHistoryPage(
-                      worker: worker,
-                    ),
-                  ),
-                );
-              },
-              leading: const CircleAvatar(
-                child: Icon(Icons.person),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            Icon(icon, size: 28),
+            const SizedBox(height: 6),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 12),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
               ),
-              title: Text(worker.name),
-              subtitle: Text(
-                '${worker.mobile} • ફેક્ટરી ${worker.factory}',
-              ),
-              trailing: PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'edit') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => WorkerFormPage(
-                          oldWorker: worker,
-                        ),
-                      ),
-                    );
-                  }
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
-                  if (value == 'delete') {
-                    appData.workers.remove(worker);
-                    appData.save();
-                  }
+// ================= WORKER PAGE =================
+
+class WorkerPage extends StatelessWidget {
+  final VoidCallback refresh;
+
+  const WorkerPage({
+    super.key,
+    required this.refresh,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final workers = AppData.instance.workers;
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        const Text(
+          'કારીગર',
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (workers.isEmpty)
+          const EmptyCard(text: 'હજુ કોઈ કારીગર ઉમેરાયેલ નથી')
+        else
+          ...workers.map(
+            (worker) => Card(
+              child: ListTile(
+                leading: const CircleAvatar(
+                  child: Icon(Icons.person),
+                ),
+                title: Text(
+                  worker.name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                subtitle: Text(
+                  '${worker.mobile}\nફેક્ટરી: ${worker.factory}',
+                ),
+                isThreeLine: true,
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          WorkerHistoryPage(worker: worker),
+                    ),
+                  );
+                  refresh();
                 },
-                itemBuilder: (_) => const [
-                  PopupMenuItem(
-                    value: 'edit',
-                    child: Text('Edit'),
-                  ),
-                  PopupMenuItem(
-                    value: 'delete',
-                    child: Text('Delete'),
-                  ),
-                ],
+                trailing: PopupMenuButton<String>(
+                  onSelected: (value) async {
+                    if (value == 'edit') {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              WorkerFormPage(worker: worker),
+                        ),
+                      );
+                      refresh();
+                    }
+
+                    if (value == 'delete') {
+                      AppData.instance.workers
+                          .removeWhere((e) => e.id == worker.id);
+
+                      await AppData.instance.save();
+                      refresh();
+                    }
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: Text('Edit'),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Delete'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
       ],
     );
   }
@@ -745,11 +730,11 @@ class WorkerPage extends StatelessWidget {
 // ================= WORKER FORM =================
 
 class WorkerFormPage extends StatefulWidget {
-  final Worker? oldWorker;
+  final Worker? worker;
 
   const WorkerFormPage({
     super.key,
-    this.oldWorker,
+    this.worker,
   });
 
   @override
@@ -757,90 +742,120 @@ class WorkerFormPage extends StatefulWidget {
 }
 
 class _WorkerFormPageState extends State<WorkerFormPage> {
-  final nameController = TextEditingController();
-  final mobileController = TextEditingController();
-  final factoryController = TextEditingController();
+  late TextEditingController nameController;
+  late TextEditingController mobileController;
+  late TextEditingController factoryController;
 
   @override
   void initState() {
     super.initState();
 
-    final worker = widget.oldWorker;
-
-    if (worker != null) {
-      nameController.text = worker.name;
-      mobileController.text = worker.mobile;
-      factoryController.text = worker.factory;
-    }
-  }
-
-  void saveWorker() {
-    if (nameController.text.isEmpty ||
-        mobileController.text.length != 10 ||
-        factoryController.text.isEmpty) {
-      showMessage(
-        context,
-        'બધી માહિતી સાચી રીતે નાખો',
-      );
-      return;
-    }
-
-    if (widget.oldWorker == null) {
-      appData.workers.add(
-        Worker(
-          id: DateTime.now().microsecondsSinceEpoch.toString(),
-          name: nameController.text,
-          mobile: mobileController.text,
-          factory: factoryController.text,
-        ),
-      );
-    } else {
-      widget.oldWorker!.name = nameController.text;
-      widget.oldWorker!.mobile = mobileController.text;
-      widget.oldWorker!.factory = factoryController.text;
-    }
-
-    appData.save();
-
-    Navigator.pop(context);
+    nameController =
+        TextEditingController(text: widget.worker?.name ?? '');
+    mobileController =
+        TextEditingController(text: widget.worker?.mobile ?? '');
+    factoryController =
+        TextEditingController(text: widget.worker?.factory ?? '');
   }
 
   @override
   Widget build(BuildContext context) {
-    return FormScaffold(
-      title: widget.oldWorker == null
-          ? 'નવો કારીગર'
-          : 'કારીગર Edit',
-      fields: [
-        input(
-          nameController,
-          'કારીગરનું નામ',
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          widget.worker == null
+              ? 'કારીગર ઉમેરો'
+              : 'કારીગર Edit',
         ),
-        input(
-          mobileController,
-          'મોબાઇલ નંબર',
-          keyboardType: TextInputType.phone,
-        ),
-        input(
-          factoryController,
-          'ફેક્ટરી નંબર',
-        ),
-      ],
-      onSave: saveWorker,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          TextField(
+            controller: nameController,
+            decoration: const InputDecoration(
+              labelText: 'કારીગરનું નામ',
+              prefixIcon: Icon(Icons.person),
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: mobileController,
+            keyboardType: TextInputType.phone,
+            decoration: const InputDecoration(
+              labelText: 'મોબાઇલ નંબર',
+              prefixIcon: Icon(Icons.phone),
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: factoryController,
+            decoration: const InputDecoration(
+              labelText: 'ફેક્ટરી નંબર',
+              prefixIcon: Icon(Icons.factory),
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 25),
+          SizedBox(
+            height: 52,
+            child: FilledButton.icon(
+              onPressed: () async {
+                if (nameController.text.trim().isEmpty) {
+                  showMessage(context, 'કારીગરનું નામ નાખો');
+                  return;
+                }
+
+                final id =
+                    widget.worker?.id ??
+                    DateTime.now()
+                        .millisecondsSinceEpoch
+                        .toString();
+
+                final worker = Worker(
+                  id: id,
+                  name: nameController.text.trim(),
+                  mobile: mobileController.text.trim(),
+                  factory: factoryController.text.trim(),
+                );
+
+                if (widget.worker == null) {
+                  AppData.instance.workers.add(worker);
+                } else {
+                  final index = AppData.instance.workers
+                      .indexWhere((e) => e.id == widget.worker!.id);
+
+                  if (index != -1) {
+                    AppData.instance.workers[index] = worker;
+                  }
+                }
+
+                await AppData.instance.save();
+
+                if (!context.mounted) return;
+
+                Navigator.pop(context);
+              },
+              icon: const Icon(Icons.save),
+              label: const Text('Save'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-// ================= WORK =================
+// ================= WORK PAGE =================
 
 class WorkPage extends StatefulWidget {
   final String section;
-  final WorkRecord? oldRecord;
 
   const WorkPage({
     super.key,
     required this.section,
-    this.oldRecord,
   });
 
   @override
@@ -858,23 +873,7 @@ class _WorkPageState extends State<WorkPage> {
   @override
   void initState() {
     super.initState();
-
     section = widget.section;
-
-    if (widget.oldRecord != null) {
-      final work = widget.oldRecord!;
-
-      section = work.section;
-      workerId = work.workerId;
-      diamondsController.text =
-          work.diamonds.toString();
-      rateController.text =
-          work.rate.toString();
-
-      selectedDate =
-          DateTime.tryParse(work.date) ??
-              DateTime.now();
-    }
 
     diamondsController.addListener(() {
       setState(() {});
@@ -885,177 +884,207 @@ class _WorkPageState extends State<WorkPage> {
     });
   }
 
-  void saveWork() {
-    final diamonds =
-        double.tryParse(diamondsController.text) ?? 0;
+  double get diamonds =>
+      double.tryParse(diamondsController.text) ?? 0;
 
-    final rate =
-        double.tryParse(rateController.text) ?? 0;
+  double get rate =>
+      double.tryParse(rateController.text) ?? 0;
 
-    if (workerId == null ||
-        diamonds <= 0 ||
-        rate <= 0) {
-      showMessage(
-        context,
-        'કારીગર, હીરા અને ભાવ નાખો',
-      );
-      return;
-    }
-
-    if (widget.oldRecord == null) {
-      appData.works.add(
-        WorkRecord(
-          id: DateTime.now()
-              .microsecondsSinceEpoch
-              .toString(),
-          section: section,
-          date: formatDate(selectedDate),
-          workerId: workerId!,
-          diamonds: diamonds,
-          rate: rate,
-        ),
-      );
-    } else {
-      final work = widget.oldRecord!;
-
-      work.section = section;
-      work.date = formatDate(selectedDate);
-      work.workerId = workerId!;
-      work.diamonds = diamonds;
-      work.rate = rate;
-    }
-
-    appData.save();
-
-    Navigator.pop(context);
-  }
+  double get total => diamonds * rate;
 
   @override
   Widget build(BuildContext context) {
-    final diamonds =
-        double.tryParse(diamondsController.text) ?? 0;
+    final workers = AppData.instance.workers;
 
-    final rate =
-        double.tryParse(rateController.text) ?? 0;
-
-    final total = diamonds * rate;
-
-    return FormScaffold(
-      title: 'કામ નોંધો',
-      fields: [
-        DropdownButtonFormField<String>(
-          value: section,
-          decoration: const InputDecoration(
-            labelText: 'Section',
-            border: OutlineInputBorder(),
-          ),
-          items: const [
-            DropdownMenuItem(
-              value: 'તળીયા',
-              child: Text('તળીયા'),
+    return Scaffold(
+      appBar: AppBar(title: const Text('કામ ઉમેરો')),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          DropdownButtonFormField<String>(
+            value: section,
+            decoration: const InputDecoration(
+              labelText: 'વિભાગ',
+              border: OutlineInputBorder(),
             ),
-            DropdownMenuItem(
-              value: 'પેલ',
-              child: Text('પેલ'),
-            ),
-            DropdownMenuItem(
-              value: 'મથાળા',
-              child: Text('મથાળા'),
-            ),
-          ],
-          onChanged: (value) {
-            setState(() {
-              section = value!;
-            });
-          },
-        ),
-
-        const SizedBox(height: 12),
-
-        ListTile(
-          shape: RoundedRectangleBorder(
-            side: BorderSide(
-              color: Colors.grey.shade400,
-            ),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          leading: const Icon(Icons.calendar_month),
-          title: const Text('તારીખ'),
-          subtitle: Text(
-            formatDate(selectedDate),
-          ),
-          onTap: () async {
-            final date = await showDatePicker(
-              context: context,
-              firstDate: DateTime(2020),
-              lastDate: DateTime(2100),
-              initialDate: selectedDate,
-            );
-
-            if (date != null) {
-              setState(() {
-                selectedDate = date;
-              });
-            }
-          },
-        ),
-
-        const SizedBox(height: 12),
-
-        DropdownButtonFormField<String>(
-          value: workerId,
-          decoration: const InputDecoration(
-            labelText: 'કારીગર',
-            border: OutlineInputBorder(),
-          ),
-          items: appData.workers.map(
-            (worker) {
-              return DropdownMenuItem(
-                value: worker.id,
-                child: Text(worker.name),
-              );
+            items: const [
+              DropdownMenuItem(
+                value: 'તળીયા',
+                child: Text('તળીયા'),
+              ),
+              DropdownMenuItem(
+                value: 'પેલ',
+                child: Text('પેલ'),
+              ),
+              DropdownMenuItem(
+                value: 'મથાળા',
+                child: Text('મથાળા'),
+              ),
+            ],
+            onChanged: (value) {
+              if (value != null) {
+                setState(() {
+                  section = value;
+                });
+              }
             },
-          ).toList(),
-          onChanged: (value) {
-            setState(() {
-              workerId = value;
-            });
-          },
-        ),
+          ),
+          const SizedBox(height: 16),
+          ListTile(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: Colors.grey),
+            ),
+            leading: const Icon(Icons.calendar_month),
+            title: const Text('તારીખ'),
+            subtitle: Text(
+              '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+            ),
+            onTap: () async {
+              final date = await showDatePicker(
+                context: context,
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2100),
+                initialDate: selectedDate,
+              );
 
-        const SizedBox(height: 12),
-
-        input(
-          diamondsController,
-          'હીરા',
-          keyboardType: TextInputType.number,
-        ),
-
-        input(
-          rateController,
-          'ભાવ',
-          keyboardType: TextInputType.number,
-        ),
-
-        const SizedBox(height: 15),
-
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Text(
-              'હીરા × ભાવ = ટોટલ કામ\n\n'
-              '${diamonds.toStringAsFixed(0)} × '
-              '${money(rate)} = '
-              '${money(total)}',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+              if (date != null) {
+                setState(() {
+                  selectedDate = date;
+                });
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            value: workerId,
+            decoration: const InputDecoration(
+              labelText: 'કારીગર',
+              border: OutlineInputBorder(),
+            ),
+            items: workers
+                .map(
+                  (worker) => DropdownMenuItem(
+                    value: worker.id,
+                    child: Text(worker.name),
+                  ),
+                )
+                .toList(),
+            onChanged: (value) {
+              setState(() {
+                workerId = value;
+              });
+            },
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: diamondsController,
+            keyboardType:
+                const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'હીરા',
+              prefixIcon: Icon(Icons.diamond),
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: rateController,
+            keyboardType:
+                const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'ભાવ',
+              prefixIcon: Icon(Icons.currency_rupee),
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  const Text(
+                    'ટોટલ કામ',
+                    style: TextStyle(fontSize: 17),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    money(total),
+                    style: const TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    '${formatNumber(diamonds)} × ${money(rate)}',
+                  ),
+                ],
               ),
             ),
           ),
-        ),
-      ],
-      onSave: saveWork,
+          const SizedBox(height: 25),
+          SizedBox(
+            height: 52,
+            child: FilledButton.icon(
+              onPressed: () async {
+                if (workerId == null) {
+                  showMessage(context, 'કારીગર પસંદ કરો');
+                  return;
+                }
+
+                if (diamonds <= 0) {
+                  showMessage(context, 'હીરા નાખો');
+                  return;
+                }
+
+                final record = WorkRecord(
+                  id: DateTime.now()
+                      .millisecondsSinceEpoch
+                      .toString(),
+                  section: section,
+                  date:
+                      '${selectedDate.day.toString().padLeft(2, '0')}/'
+                      '${selectedDate.month.toString().padLeft(2, '0')}/'
+                      '${selectedDate.year}',
+                  workerId: workerId!,
+                  diamonds: diamonds,
+                  rate: rate,
+                );
+
+                AppData.instance.works.add(record);
+
+                await AppData.instance.save();
+
+                if (!context.mounted) return;
+
+                Navigator.pop(context);
+              },
+              icon: const Icon(Icons.save),
+              label: const Text('કામ Save કરો'),
+            ),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => WithdrawalPage(
+                    section: section,
+                  ),
+                ),
+              );
+              if (context.mounted) {
+                setState(() {});
+              }
+            },
+            icon: const Icon(Icons.payments),
+            label: const Text('ઉપાડ ઉમેરો'),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1064,184 +1093,253 @@ class _WorkPageState extends State<WorkPage> {
 
 class WithdrawalPage extends StatefulWidget {
   final String section;
-  final WithdrawalRecord? oldRecord;
 
   const WithdrawalPage({
     super.key,
     required this.section,
-    this.oldRecord,
   });
 
   @override
-  State<WithdrawalPage> createState() =>
-      _WithdrawalPageState();
+  State<WithdrawalPage> createState() => _WithdrawalPageState();
 }
 
-class _WithdrawalPageState
-    extends State<WithdrawalPage> {
-  late String section;
+class _WithdrawalPageState extends State<WithdrawalPage> {
   String? workerId;
+  DateTime date = DateTime.now();
 
-  DateTime selectedDate = DateTime.now();
-
-  final amountController =
-      TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-
-    section = widget.section;
-
-    if (widget.oldRecord != null) {
-      final record = widget.oldRecord!;
-
-      section = record.section;
-      workerId = record.workerId;
-
-      amountController.text =
-          record.amount.toString();
-
-      selectedDate =
-          DateTime.tryParse(record.date) ??
-              DateTime.now();
-    }
-  }
-
-  void saveWithdrawal() {
-    final amount =
-        double.tryParse(amountController.text) ?? 0;
-
-    if (workerId == null || amount <= 0) {
-      showMessage(
-        context,
-        'કારીગર અને ઉપાડ નાખો',
-      );
-      return;
-    }
-
-    if (widget.oldRecord == null) {
-      appData.withdrawals.add(
-        WithdrawalRecord(
-          id: DateTime.now()
-              .microsecondsSinceEpoch
-              .toString(),
-          section: section,
-          date: formatDate(selectedDate),
-          workerId: workerId!,
-          amount: amount,
-        ),
-      );
-    } else {
-      final record = widget.oldRecord!;
-
-      record.section = section;
-      record.date = formatDate(selectedDate);
-      record.workerId = workerId!;
-      record.amount = amount;
-    }
-
-    appData.save();
-
-    Navigator.pop(context);
-  }
+  final amountController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
-    return FormScaffold(
-      title: 'ઉપાડ નોંધો',
-      fields: [
-        DropdownButtonFormField<String>(
-          value: section,
-          decoration: const InputDecoration(
-            labelText: 'Section',
-            border: OutlineInputBorder(),
+    final workers = AppData.instance.workers;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('ઉપાડ')),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          DropdownButtonFormField<String>(
+            value: widget.section,
+            decoration: const InputDecoration(
+              labelText: 'વિભાગ',
+              border: OutlineInputBorder(),
+            ),
+            items: const [
+              DropdownMenuItem(
+                value: 'તળીયા',
+                child: Text('તળીયા'),
+              ),
+              DropdownMenuItem(
+                value: 'પેલ',
+                child: Text('પેલ'),
+              ),
+              DropdownMenuItem(
+                value: 'મથાળા',
+                child: Text('મથાળા'),
+              ),
+            ],
+            onChanged: (_) {},
           ),
-          items: const [
-            DropdownMenuItem(
-              value: 'તળીયા',
-              child: Text('તળીયા'),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            value: workerId,
+            decoration: const InputDecoration(
+              labelText: 'કારીગર',
+              border: OutlineInputBorder(),
             ),
-            DropdownMenuItem(
-              value: 'પેલ',
-              child: Text('પેલ'),
+            items: workers
+                .map(
+                  (worker) => DropdownMenuItem(
+                    value: worker.id,
+                    child: Text(worker.name),
+                  ),
+                )
+                .toList(),
+            onChanged: (value) {
+              setState(() {
+                workerId = value;
+              });
+            },
+          ),
+          const SizedBox(height: 16),
+          ListTile(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: Colors.grey),
             ),
-            DropdownMenuItem(
-              value: 'મથાળા',
-              child: Text('મથાળા'),
+            leading: const Icon(Icons.calendar_month),
+            title: const Text('તારીખ'),
+            subtitle: Text(
+              '${date.day}/${date.month}/${date.year}',
+            ),
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2100),
+                initialDate: date,
+              );
+
+              if (picked != null) {
+                setState(() {
+                  date = picked;
+                });
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: amountController,
+            keyboardType:
+                const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'ઉપાડ',
+              prefixIcon: Icon(Icons.currency_rupee),
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 25),
+          SizedBox(
+            height: 52,
+            child: FilledButton.icon(
+              onPressed: () async {
+                if (workerId == null) {
+                  showMessage(context, 'કારીગર પસંદ કરો');
+                  return;
+                }
+
+                final amount =
+                    double.tryParse(amountController.text) ?? 0;
+
+                if (amount <= 0) {
+                  showMessage(context, 'ઉપાડની રકમ નાખો');
+                  return;
+                }
+
+                AppData.instance.withdrawals.add(
+                  WithdrawalRecord(
+                    id: DateTime.now()
+                        .millisecondsSinceEpoch
+                        .toString(),
+                    section: widget.section,
+                    date:
+                        '${date.day.toString().padLeft(2, '0')}/'
+                        '${date.month.toString().padLeft(2, '0')}/'
+                        '${date.year}',
+                    workerId: workerId!,
+                    amount: amount,
+                  ),
+                );
+
+                await AppData.instance.save();
+
+                if (!context.mounted) return;
+
+                Navigator.pop(context);
+              },
+              icon: const Icon(Icons.save),
+              label: const Text('ઉપાડ Save કરો'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ================= WORK CARD =================
+
+class WorkCard extends StatelessWidget {
+  final WorkRecord record;
+  final VoidCallback onChanged;
+
+  const WorkCard({
+    super.key,
+    required this.record,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final worker = AppData.instance.getWorker(record.workerId);
+
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.diamond),
+        title: Text(
+          worker?.name ?? 'Unknown Worker',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          '${record.date}\n'
+          '${record.diamonds} × ${money(record.rate)}',
+        ),
+        isThreeLine: true,
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              money(record.total),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            PopupMenuButton<String>(
+              padding: EdgeInsets.zero,
+              onSelected: (value) async {
+                if (value == 'delete') {
+                  AppData.instance.works
+                      .removeWhere((e) => e.id == record.id);
+
+                  await AppData.instance.save();
+                  onChanged();
+                }
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Text('Delete'),
+                ),
+              ],
             ),
           ],
-          onChanged: (value) {
-            setState(() {
-              section = value!;
-            });
-          },
         ),
+      ),
+    );
+  }
+}
 
-        const SizedBox(height: 12),
+// ================= WITHDRAWAL CARD =================
 
-        ListTile(
-          shape: RoundedRectangleBorder(
-            side: BorderSide(
-              color: Colors.grey,
-            ),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          leading: const Icon(
-            Icons.calendar_month,
-          ),
-          title: const Text('તારીખ'),
-          subtitle: Text(
-            formatDate(selectedDate),
-          ),
-          onTap: () async {
-            final date = await showDatePicker(
-              context: context,
-              firstDate: DateTime(2020),
-              lastDate: DateTime(2100),
-              initialDate: selectedDate,
-            );
+class WithdrawalCard extends StatelessWidget {
+  final WithdrawalRecord record;
+  final VoidCallback onChanged;
 
-            if (date != null) {
-              setState(() {
-                selectedDate = date;
-              });
-            }
-          },
+  const WithdrawalCard({
+    super.key,
+    required this.record,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final worker = AppData.instance.getWorker(record.workerId);
+
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.payments),
+        title: Text(
+          worker?.name ?? 'Unknown Worker',
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-
-        const SizedBox(height: 12),
-
-        DropdownButtonFormField<String>(
-          value: workerId,
-          decoration: const InputDecoration(
-            labelText: 'કારીગર',
-            border: OutlineInputBorder(),
+        subtitle: Text(record.date),
+        trailing: Text(
+          money(record.amount),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
           ),
-          items: appData.workers.map(
-            (worker) {
-              return DropdownMenuItem(
-                value: worker.id,
-                child: Text(worker.name),
-              );
-            },
-          ).toList(),
-          onChanged: (value) {
-            setState(() {
-              workerId = value;
-            });
-          },
         ),
-
-        const SizedBox(height: 12),
-
-        input(
-          amountController,
-          'ઉપાડ',
-          keyboardType: TextInputType.number,
-        ),
-      ],
-      onSave: saveWithdrawal,
+      ),
     );
   }
 }
@@ -1258,53 +1356,37 @@ class WorkerHistoryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final works = appData.works
+    final works = AppData.instance.works
         .where((e) => e.workerId == worker.id)
         .toList();
 
-    final withdrawals = appData.withdrawals
+    final withdrawals = AppData.instance.withdrawals
         .where((e) => e.workerId == worker.id)
         .toList();
 
     final totalDiamonds =
-        works.fold<double>(
-      0,
-      (sum, e) => sum + e.diamonds,
-    );
+        works.fold<double>(0, (sum, e) => sum + e.diamonds);
 
     final totalWork =
-        works.fold<double>(
-      0,
-      (sum, e) => sum + e.totalWork,
-    );
+        works.fold<double>(0, (sum, e) => sum + e.total);
 
     final totalWithdrawal =
-        withdrawals.fold<double>(
-      0,
-      (sum, e) => sum + e.amount,
-    );
+        withdrawals.fold<double>(0, (sum, e) => sum + e.amount);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(worker.name),
         actions: [
           IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
             onPressed: () {
-              generateWorkerPdf(
-                context,
-                worker,
-                works,
-                withdrawals,
-              );
+              generateWorkerPdf(worker);
             },
-            icon: const Icon(
-              Icons.picture_as_pdf,
-            ),
           ),
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         children: [
           Card(
             child: ListTile(
@@ -1318,56 +1400,67 @@ class WorkerHistoryPage extends StatelessWidget {
               ),
             ),
           ),
-
-          Row(
-            children: [
-              summaryCard(
-                'ટોટલ હીરા',
-                totalDiamonds.toStringAsFixed(0),
-              ),
-              summaryCard(
-                'ટોટલ કામ',
-                money(totalWork),
-              ),
-              summaryCard(
-                'ટોટલ ઉપાડ',
-                money(totalWithdrawal),
-              ),
-            ],
-          ),
-
           const SizedBox(height: 12),
-
+          SummaryCard(
+            title: 'ટોટલ હીરા',
+            value: formatNumber(totalDiamonds),
+            icon: Icons.diamond,
+          ),
+          SummaryCard(
+            title: 'ટોટલ કામ',
+            value: money(totalWork),
+            icon: Icons.currency_rupee,
+          ),
+          SummaryCard(
+            title: 'ટોટલ ઉપાડ',
+            value: money(totalWithdrawal),
+            icon: Icons.payments,
+          ),
+          const SizedBox(height: 20),
           const Text(
-            'પૂર્ણ હિસ્ટરી',
+            'કામની હિસ્ટરી',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 21,
               fontWeight: FontWeight.bold,
             ),
           ),
-
-          ...works.reversed.map(
-            (work) => Card(
+          const SizedBox(height: 8),
+          ...works.map(
+            (record) => Card(
               child: ListTile(
-                title: Text(work.date),
+                title: Text(record.date),
                 subtitle: Text(
-                  '${work.section}\n'
-                  '${work.diamonds.toStringAsFixed(0)} × '
-                  '${money(work.rate)} = '
-                  '${money(work.totalWork)}',
+                  '${record.section}\n'
+                  '${record.diamonds} × ${money(record.rate)}',
+                ),
+                isThreeLine: true,
+                trailing: Text(
+                  money(record.total),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
           ),
-
-          ...withdrawals.reversed.map(
-            (withdrawal) => Card(
+          const SizedBox(height: 20),
+          const Text(
+            'ઉપાડ',
+            style: TextStyle(
+              fontSize: 21,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          ...withdrawals.map(
+            (record) => Card(
               child: ListTile(
-                leading: const Icon(Icons.payments),
-                title: Text(withdrawal.date),
-                subtitle: Text(
-                  '${withdrawal.section} • '
-                  'ઉપાડ: ${money(withdrawal.amount)}',
+                title: Text(record.date),
+                subtitle: Text(record.section),
+                trailing: Text(
+                  money(record.amount),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
@@ -1385,153 +1478,88 @@ class TotalDiamondsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const sections = [
-      'તળીયા',
-      'પેલ',
-      'મથાળા',
-    ];
+    final sections = ['તળીયા', 'પેલ', 'મથાળા'];
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('ટોટલ હીરા'),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(12),
-        children: sections.map(
-          (section) {
-            final works = appData.works
-                .where((e) => e.section == section)
-                .toList();
+        padding: const EdgeInsets.all(16),
+        children: [
+          ...sections.map(
+            (section) {
+              final works = AppData.instance.works
+                  .where((e) => e.section == section)
+                  .toList();
 
-            final diamonds =
-                works.fold<double>(
-              0,
-              (sum, e) => sum + e.diamonds,
-            );
+              final diamonds =
+                  works.fold<double>(0, (sum, e) => sum + e.diamonds);
 
-            final totalWork =
-                works.fold<double>(
-              0,
-              (sum, e) => sum + e.totalWork,
-            );
+              final total =
+                  works.fold<double>(0, (sum, e) => sum + e.total);
 
-            return Card(
-              child: ListTile(
-                leading: const Icon(
-                  Icons.diamond,
-                ),
-                title: Text(section),
-                subtitle: Text(
-                  'ટોટલ હીરા: '
-                  '${diamonds.toStringAsFixed(0)}\n'
-                  'ટોટલ કામ: ${money(totalWork)}',
-                ),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => SectionPage(
-                        section: section,
-                      ),
+              return Card(
+                child: ListTile(
+                  leading: const Icon(Icons.diamond),
+                  title: Text(
+                    section,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
                     ),
-                  );
-                },
-              ),
-            );
-          },
-        ).toList(),
+                  ),
+                  subtitle: Text(
+                    'હીરા: ${formatNumber(diamonds)}\n'
+                    'ટોટલ કામ: ${money(total)}',
+                  ),
+                  isThreeLine: true,
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'કારીગર પ્રમાણે',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...AppData.instance.workers.map(
+            (worker) {
+              final works = AppData.instance.works
+                  .where((e) => e.workerId == worker.id)
+                  .toList();
+
+              final diamonds =
+                  works.fold<double>(0, (sum, e) => sum + e.diamonds);
+
+              final total =
+                  works.fold<double>(0, (sum, e) => sum + e.total);
+
+              return Card(
+                child: ListTile(
+                  title: Text(worker.name),
+                  subtitle: Text(
+                    'હીરા: ${formatNumber(diamonds)}\n'
+                    'ટોટલ કામ: ${money(total)}',
+                  ),
+                  isThreeLine: true,
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 }
 
-// ================= PDF =================
+// ================= PDF PAGE =================
 
 class PdfPage extends StatelessWidget {
   const PdfPage({super.key});
-
-  Future<void> createPdf(
-    BuildContext context,
-  ) async {
-    final pdf = pw.Document();
-
-    final totalDiamonds =
-        appData.works.fold<double>(
-      0,
-      (sum, e) => sum + e.diamonds,
-    );
-
-    final totalWork =
-        appData.works.fold<double>(
-      0,
-      (sum, e) => sum + e.totalWork,
-    );
-
-    final totalWithdrawal =
-        appData.withdrawals.fold<double>(
-      0,
-      (sum, e) => sum + e.amount,
-    );
-
-    pdf.addPage(
-      pw.MultiPage(
-        build: (context) => [
-          pw.Text(
-            'Hira Kaam History',
-            style: pw.TextStyle(
-              fontSize: 24,
-            ),
-          ),
-
-          pw.SizedBox(height: 15),
-
-          ...appData.works.map(
-            (work) {
-              final worker =
-                  appData.getWorker(work.workerId);
-
-              return pw.Padding(
-                padding:
-                    const pw.EdgeInsets.only(
-                  bottom: 6,
-                ),
-                child: pw.Text(
-                  '${work.date} | '
-                  '${worker?.name ?? ""} | '
-                  '${work.section} | '
-                  '${work.diamonds} × '
-                  '${work.rate} = '
-                  '${work.totalWork}',
-                ),
-              );
-            },
-          ),
-
-          pw.SizedBox(height: 15),
-
-          pw.Text(
-            'Total Diamonds: '
-            '$totalDiamonds',
-          ),
-
-          pw.Text(
-            'Total Work: '
-            '$totalWork',
-          ),
-
-          pw.Text(
-            'Total Withdrawal: '
-            '$totalWithdrawal',
-          ),
-        ],
-      ),
-    );
-
-    await Printing.sharePdf(
-      bytes: await pdf.save(),
-      filename: 'hira_kaam_history.pdf',
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -1540,22 +1568,38 @@ class PdfPage extends StatelessWidget {
         title: const Text('PDF'),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         children: [
           Card(
             child: ListTile(
-              leading: const Icon(
-                Icons.picture_as_pdf,
-              ),
-              title: const Text(
-                'Complete History PDF',
-              ),
+              leading: const Icon(Icons.calendar_month),
+              title: const Text('Complete History PDF'),
               subtitle: const Text(
-                'Date • Worker • Section • '
-                'Diamonds • Rate • Total Work • Withdrawal',
+                'કામ અને ઉપાડની સંપૂર્ણ હિસ્ટરી',
               ),
+              trailing: const Icon(Icons.picture_as_pdf),
               onTap: () {
-                createPdf(context);
+                generateCompletePdf();
+              },
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.people),
+              title: const Text('Worker-wise PDF'),
+              subtitle: const Text(
+                'કારીગર પ્રમાણે હિસ્ટરી',
+              ),
+              trailing: const Icon(Icons.picture_as_pdf),
+              onTap: () async {
+                if (AppData.instance.workers.isEmpty) {
+                  showMessage(context, 'પહેલા કારીગર ઉમેરો');
+                  return;
+                }
+
+                final worker = AppData.instance.workers.first;
+
+                await generateWorkerPdf(worker);
               },
             ),
           ),
@@ -1565,83 +1609,171 @@ class PdfPage extends StatelessWidget {
   }
 }
 
-// ================= PDF WORKER =================
+// ================= PDF FUNCTIONS =================
 
-Future<void> generateWorkerPdf(
-  BuildContext context,
-  Worker worker,
-  List<WorkRecord> works,
-  List<WithdrawalRecord> withdrawals,
-) async {
+Future<void> generateCompletePdf() async {
   final pdf = pw.Document();
 
+  final works = AppData.instance.works;
+  final withdrawals = AppData.instance.withdrawals;
+
   final totalDiamonds =
-      works.fold<double>(
-    0,
-    (sum, e) => sum + e.diamonds,
-  );
+      works.fold<double>(0, (sum, e) => sum + e.diamonds);
 
   final totalWork =
-      works.fold<double>(
-    0,
-    (sum, e) => sum + e.totalWork,
-  );
+      works.fold<double>(0, (sum, e) => sum + e.total);
 
   final totalWithdrawal =
-      withdrawals.fold<double>(
-    0,
-    (sum, e) => sum + e.amount,
-  );
+      withdrawals.fold<double>(0, (sum, e) => sum + e.amount);
 
   pdf.addPage(
     pw.MultiPage(
       build: (context) => [
-        pw.Text(
-          'Hira Kaam History',
-          style: pw.TextStyle(
-            fontSize: 24,
-          ),
+        pw.Header(
+          level: 0,
+          child: pw.Text('Hira Kaam History'),
         ),
-
+        pw.Text(
+          'Total Diamonds: ${formatNumber(totalDiamonds)}',
+        ),
+        pw.Text(
+          'Total Work: ${money(totalWork)}',
+        ),
+        pw.Text(
+          'Total Withdrawal: ${money(totalWithdrawal)}',
+        ),
+        pw.SizedBox(height: 20),
+        pw.Text('Work History'),
         pw.SizedBox(height: 10),
+        pw.Table.fromTextArray(
+          headers: [
+            'Date',
+            'Section',
+            'Worker',
+            'Diamonds',
+            'Rate',
+            'Total Work',
+          ],
+          data: works.map((record) {
+            final worker =
+                AppData.instance.getWorker(record.workerId);
 
+            return [
+              record.date,
+              record.section,
+              worker?.name ?? '',
+              formatNumber(record.diamonds),
+              money(record.rate),
+              money(record.total),
+            ];
+          }).toList(),
+        ),
+        pw.SizedBox(height: 20),
+        pw.Text('Withdrawal History'),
+        pw.SizedBox(height: 10),
+        pw.Table.fromTextArray(
+          headers: [
+            'Date',
+            'Section',
+            'Worker',
+            'Withdrawal',
+          ],
+          data: withdrawals.map((record) {
+            final worker =
+                AppData.instance.getWorker(record.workerId);
+
+            return [
+              record.date,
+              record.section,
+              worker?.name ?? '',
+              money(record.amount),
+            ];
+          }).toList(),
+        ),
+      ],
+    ),
+  );
+
+  await Printing.sharePdf(
+    bytes: await pdf.save(),
+    filename: 'hira_kaam_history.pdf',
+  );
+}
+
+Future<void> generateWorkerPdf(Worker worker) async {
+  final pdf = pw.Document();
+
+  final works = AppData.instance.works
+      .where((e) => e.workerId == worker.id)
+      .toList();
+
+  final withdrawals = AppData.instance.withdrawals
+      .where((e) => e.workerId == worker.id)
+      .toList();
+
+  final totalDiamonds =
+      works.fold<double>(0, (sum, e) => sum + e.diamonds);
+
+  final totalWork =
+      works.fold<double>(0, (sum, e) => sum + e.total);
+
+  final totalWithdrawal =
+      withdrawals.fold<double>(0, (sum, e) => sum + e.amount);
+
+  pdf.addPage(
+    pw.MultiPage(
+      build: (context) => [
+        pw.Header(
+          level: 0,
+          child: pw.Text('Worker History'),
+        ),
         pw.Text('Worker: ${worker.name}'),
         pw.Text('Mobile: ${worker.mobile}'),
         pw.Text('Factory: ${worker.factory}'),
-
         pw.SizedBox(height: 15),
-
-        ...works.map(
-          (work) => pw.Text(
-            '${work.date} | '
-            '${work.section} | '
-            '${work.diamonds} × '
-            '${work.rate} = '
-            '${work.totalWork}',
-          ),
-        ),
-
-        ...withdrawals.map(
-          (withdrawal) => pw.Text(
-            '${withdrawal.date} | '
-            '${withdrawal.section} | '
-            'Withdrawal: ${withdrawal.amount}',
-          ),
-        ),
-
-        pw.SizedBox(height: 15),
-
         pw.Text(
-          'Total Diamonds: $totalDiamonds',
+          'Total Diamonds: ${formatNumber(totalDiamonds)}',
         ),
-
         pw.Text(
-          'Total Work: $totalWork',
+          'Total Work: ${money(totalWork)}',
         ),
-
         pw.Text(
-          'Total Withdrawal: '
-          '$totalWithdrawal',
+          'Total Withdrawal: ${money(totalWithdrawal)}',
+        ),
+        pw.SizedBox(height: 20),
+        pw.Table.fromTextArray(
+          headers: [
+            'Date',
+            'Section',
+            'Diamonds',
+            'Rate',
+            'Total Work',
+          ],
+          data: works.map((record) {
+            return [
+              record.date,
+              record.section,
+              formatNumber(record.diamonds),
+              money(record.rate),
+              money(record.total),
+            ];
+          }).toList(),
+        ),
+        pw.SizedBox(height: 20),
+        pw.Text('Withdrawal'),
+        pw.Table.fromTextArray(
+          headers: [
+            'Date',
+            'Section',
+            'Withdrawal',
+          ],
+          data: withdrawals.map((record) {
+            return [
+              record.date,
+              record.section,
+              money(record.amount),
+            ];
+          }).toList(),
         ),
       ],
     ),
@@ -1650,96 +1782,7 @@ Future<void> generateWorkerPdf(
   await Printing.sharePdf(
     bytes: await pdf.save(),
     filename:
-        '${worker.name}_history.pdf',
-  );
-}
-
-// ================= COMMON WIDGETS =================
-
-class FormScaffold extends StatelessWidget {
-  final String title;
-  final List<Widget> fields;
-  final VoidCallback onSave;
-
-  const FormScaffold({
-    super.key,
-    required this.title,
-    required this.fields,
-    required this.onSave,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          ...fields,
-          const SizedBox(height: 15),
-          SizedBox(
-            height: 52,
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: onSave,
-              child: const Text('Save'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-Widget input(
-  TextEditingController controller,
-  String label, {
-  TextInputType? keyboardType,
-}) {
-  return Padding(
-    padding: const EdgeInsets.only(
-      bottom: 12,
-    ),
-    child: TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-      ),
-    ),
-  );
-}
-
-Widget summaryCard(
-  String title,
-  String value,
-) {
-  return Expanded(
-    child: Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            Text(
-              title,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              value,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
+        'worker_${worker.name.replaceAll(' ', '_')}.pdf',
   );
 }
 
@@ -1749,19 +1792,42 @@ String money(double value) {
   return '₹${value.toStringAsFixed(2)}';
 }
 
-String formatDate(DateTime date) {
-  return '${date.year}-'
-      '${date.month.toString().padLeft(2, '0')}-'
-      '${date.day.toString().padLeft(2, '0')}';
+String formatNumber(double value) {
+  if (value == value.roundToDouble()) {
+    return value.toInt().toString();
+  }
+
+  return value.toStringAsFixed(2);
 }
 
-void showMessage(
-  BuildContext context,
-  String message,
-) {
+void showMessage(BuildContext context, String message) {
   ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(message),
-    ),
+    SnackBar(content: Text(message)),
   );
+}
+
+// ================= EMPTY =================
+
+class EmptyCard extends StatelessWidget {
+  final String text;
+
+  const EmptyCard({
+    super.key,
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(25),
+        child: Center(
+          child: Text(
+            text,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
 }
