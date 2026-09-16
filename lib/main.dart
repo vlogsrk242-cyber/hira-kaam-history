@@ -14,14 +14,13 @@ class HiraKaamHistoryApp extends StatelessWidget {
       title: 'હિરા કામ હિસ્ટરી',
       theme: ThemeData(
         useMaterial3: true,
-        colorSchemeSeed: Colors.blue,
+        colorSchemeSeed: Colors.indigo,
+        scaffoldBackgroundColor: const Color(0xFFF6F7FB),
       ),
       home: const SignUpPage(),
     );
   }
 }
-
-// ================= SIGN UP =================
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -32,82 +31,113 @@ class SignUpPage extends StatefulWidget {
 
 class _SignUpPageState extends State<SignUpPage> {
   final mobileController = TextEditingController();
+  final otpController = TextEditingController();
+  bool otpSent = false;
+
+  @override
+  void dispose() {
+    mobileController.dispose();
+    otpController.dispose();
+    super.dispose();
+  }
+
+  void sendOtp() {
+    if (mobileController.text.trim().length != 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('10 અંકનો મોબાઇલ નંબર નાખો')),
+      );
+      return;
+    }
+
+    setState(() => otpSent = true);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Demo OTP: 123456')),
+    );
+  }
+
+  void verifyOtp() {
+    if (otpController.text.trim() != '123456') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('OTP ખોટો છે')),
+      );
+      return;
+    }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const DashboardPage(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.diamond,
-                size: 90,
-                color: Colors.blue,
-              ),
-
-              const SizedBox(height: 20),
-
-              const Text(
-                'હિરા કામ હિસ્ટરી',
-                style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              const Text(
-                'તમારા કામ અને ઉપાડનો સરળ હિસાબ',
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 35),
-
-              TextField(
-                controller: mobileController,
-                keyboardType: TextInputType.phone,
-                maxLength: 10,
-                decoration: const InputDecoration(
-                  labelText: 'મોબાઇલ નંબર',
-                  prefixText: '+91 ',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-
-              const SizedBox(height: 15),
-
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (mobileController.text.length == 10) {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const DashboardPage(),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Card(
+              elevation: 4,
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.diamond,
+                      size: 64,
+                      color: Colors.indigo,
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'હિરા કામ હિસ્ટરી',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text('મોબાઇલ નંબરથી Sign Up કરો'),
+                    const SizedBox(height: 24),
+                    TextField(
+                      controller: mobileController,
+                      keyboardType: TextInputType.phone,
+                      maxLength: 10,
+                      decoration: const InputDecoration(
+                        labelText: 'મોબાઇલ નંબર',
+                        prefixIcon: Icon(Icons.phone),
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    if (otpSent) ...[
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: otpController,
+                        keyboardType: TextInputType.number,
+                        maxLength: 6,
+                        decoration: const InputDecoration(
+                          labelText: 'OTP',
+                          prefixIcon: Icon(Icons.lock),
+                          border: OutlineInputBorder(),
                         ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content:
-                              Text('10 અંકનો મોબાઇલ નંબર નાખો'),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: otpSent ? verifyOtp : sendOtp,
+                        child: Text(
+                          otpSent ? 'OTP Verify' : 'OTP મોકલો',
                         ),
-                      );
-                    }
-                  },
-                  child: const Text(
-                    'Sign Up',
-                    style: TextStyle(fontSize: 18),
-                  ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -115,15 +145,27 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 }
 
-// ================= DASHBOARD =================
-
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
-  void openPage(BuildContext context, Widget page) {
+  @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  int index = 0;
+
+  final pages = const [
+    SummaryPage(title: 'તળીયા'),
+    SummaryPage(title: 'પેલ'),
+    SummaryPage(title: 'મથાળા'),
+    WorkerPage(),
+  ];
+
+  void openPage(Widget page) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => page),
+      MaterialPageRoute(builder: (_) => page),
     );
   }
 
@@ -137,215 +179,214 @@ class DashboardPage extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const Card(
-            child: Padding(
-              padding: EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'સ્વાગત 👋',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+      body: index == 3
+          ? pages[index]
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _menuCard(
+                          '👷 કારીગર',
+                          Icons.people,
+                          () => openPage(const WorkerPage()),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _menuCard(
+                          '💼 કામ',
+                          Icons.work,
+                          () => openPage(const WorkPage()),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _menuCard(
+                          '💰 ઉપાડ',
+                          Icons.payments,
+                          () => openPage(const WithdrawalPage()),
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 6),
-                  Text(
-                    'તમારો કામ અને ઉપાડનો હિસાબ મેનેજ કરો.',
-                  ),
-                ],
-              ),
+                ),
+                Expanded(child: pages[index]),
+              ],
             ),
-          ),
-
-          const SizedBox(height: 15),
-
-          DashboardButton(
-            icon: Icons.person,
-            title: 'કારીગર',
-            color: Colors.orange,
-            onTap: () {
-              openPage(context, const WorkerPage());
-            },
-          ),
-
-          DashboardButton(
-            icon: Icons.work,
-            title: 'કામ',
-            color: Colors.green,
-            onTap: () {
-              openPage(context, const WorkPage());
-            },
-          ),
-
-          DashboardButton(
-            icon: Icons.payments,
-            title: 'ઉપાડ',
-            color: Colors.deepPurple,
-            onTap: () {
-              openPage(context, const WithdrawalPage());
-            },
-          ),
-        ],
-      ),
-
       bottomNavigationBar: NavigationBar(
+        selectedIndex: index,
+        onDestinationSelected: (value) {
+          setState(() => index = value);
+        },
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.layers_outlined),
+            icon: Icon(Icons.layers),
             label: 'તળીયા',
           ),
           NavigationDestination(
-            icon: Icon(Icons.diamond_outlined),
+            icon: Icon(Icons.diamond),
             label: 'પેલ',
           ),
           NavigationDestination(
-            icon: Icon(Icons.view_headline),
+            icon: Icon(Icons.category),
             label: 'મથાળા',
           ),
           NavigationDestination(
-            icon: Icon(Icons.people_outline),
+            icon: Icon(Icons.people),
             label: 'કારીગર',
           ),
         ],
-        onDestinationSelected: (index) {
-          if (index == 0) {
-            openPage(context, const SummaryPage(type: 'તળીયા'));
-          }
-
-          if (index == 1) {
-            openPage(context, const SummaryPage(type: 'પેલ'));
-          }
-
-          if (index == 2) {
-            openPage(context, const SummaryPage(type: 'મથાળા'));
-          }
-
-          if (index == 3) {
-            openPage(context, const WorkerPage());
-          }
-        },
       ),
     );
   }
-}
 
-// ================= DASHBOARD BUTTON =================
-
-class DashboardButton extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final Color color;
-  final VoidCallback onTap;
-
-  const DashboardButton({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      color: color,
-      margin: const EdgeInsets.only(bottom: 14),
-      child: ListTile(
-        onTap: onTap,
-        contentPadding: const EdgeInsets.all(15),
-        leading: CircleAvatar(
-          backgroundColor: Colors.white,
-          child: Icon(icon, color: color),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 21,
-            fontWeight: FontWeight.bold,
+  Widget _menuCard(
+    String title,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: Card(
+        elevation: 2,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            vertical: 18,
+            horizontal: 8,
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                size: 32,
+                color: Colors.indigo,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
         ),
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          color: Colors.white,
-        ),
       ),
     );
   }
 }
 
-// ================= WORKER =================
-
-class WorkerPage extends StatelessWidget {
+class WorkerPage extends StatefulWidget {
   const WorkerPage({super.key});
+
+  @override
+  State<WorkerPage> createState() => _WorkerPageState();
+}
+
+class _WorkerPageState extends State<WorkerPage> {
+  final name = TextEditingController();
+  final mobile = TextEditingController();
+  final factory = TextEditingController();
+
+  @override
+  void dispose() {
+    name.dispose();
+    mobile.dispose();
+    factory.dispose();
+    super.dispose();
+  }
+
+  void save() {
+    if (name.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('કારીગરનું નામ નાખો'),
+        ),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('કારીગર સેવ થયો'),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('કારીગર'),
+        title: const Text('👷 કારીગર'),
       ),
-      body: Padding(
+      body: ListView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            const TextField(
-              decoration: InputDecoration(
-                labelText: 'કારીગરનું નામ',
-                border: OutlineInputBorder(),
+        children: [
+          _field(
+            name,
+            'કારીગરનું નામ',
+            Icons.person,
+          ),
+          _field(
+            mobile,
+            'મોબાઇલ નંબર',
+            Icons.phone,
+            type: TextInputType.phone,
+          ),
+          _field(
+            factory,
+            'કારખાના નંબર',
+            Icons.factory,
+          ),
+          const SizedBox(height: 8),
+          ElevatedButton.icon(
+            onPressed: save,
+            icon: const Icon(Icons.save),
+            label: const Text('Save'),
+          ),
+          const SizedBox(height: 20),
+          const Card(
+            child: ListTile(
+              leading: CircleAvatar(
+                child: Icon(Icons.person),
               ),
-            ),
-
-            const SizedBox(height: 12),
-
-            const TextField(
-              keyboardType: TextInputType.phone,
-              decoration: InputDecoration(
-                labelText: 'મોબાઇલ નંબર',
-                border: OutlineInputBorder(),
+              title: Text('Saved Worker'),
+              subtitle: Text(
+                'Edit માટે અહીંથી પસંદ કરો',
               ),
+              trailing: Icon(Icons.edit),
             ),
+          ),
+        ],
+      ),
+    );
+  }
 
-            const SizedBox(height: 12),
-
-            const TextField(
-              decoration: InputDecoration(
-                labelText: 'કારખાના નંબર',
-                border: OutlineInputBorder(),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('કારીગર Save થયો'),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.save),
-                label: const Text('Save'),
-              ),
-            ),
-          ],
+  Widget _field(
+    TextEditingController controller,
+    String label,
+    IconData icon, {
+    TextInputType? type,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: controller,
+        keyboardType: type,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon),
+          border: const OutlineInputBorder(),
         ),
       ),
     );
   }
 }
-
-// ================= WORK =================
 
 class WorkPage extends StatefulWidget {
   const WorkPage({super.key});
@@ -357,30 +398,42 @@ class WorkPage extends StatefulWidget {
 class _WorkPageState extends State<WorkPage> {
   String type = 'તળીયા';
 
-  final diamondsController = TextEditingController();
-  final rateController = TextEditingController();
+  final date = TextEditingController();
+  final worker = TextEditingController();
+  final diamonds = TextEditingController();
+  final rate = TextEditingController();
 
-  double total = 0;
+  double get total {
+    final d = double.tryParse(diamonds.text) ?? 0;
+    final r = double.tryParse(rate.text) ?? 0;
+    return d * r;
+  }
 
-  void calculate() {
-    final diamonds =
-        double.tryParse(diamondsController.text) ?? 0;
+  @override
+  void dispose() {
+    date.dispose();
+    worker.dispose();
+    diamonds.dispose();
+    rate.dispose();
+    super.dispose();
+  }
 
-    final rate =
-        double.tryParse(rateController.text) ?? 0;
-
-    setState(() {
-      total = diamonds * rate;
-    });
+  void save() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'કામ સેવ થયું: ₹${total.toStringAsFixed(2)}',
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('કામ'),
+        title: const Text('💼 કામ'),
       ),
-
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -405,79 +458,48 @@ class _WorkPageState extends State<WorkPage> {
               ),
             ],
             onChanged: (value) {
-              setState(() {
-                type = value!;
-              });
+              if (value != null) {
+                setState(() => type = value);
+              }
             },
           ),
-
-          const SizedBox(height: 15),
-
-          const TextField(
-            decoration: InputDecoration(
-              labelText: 'તારીખ',
-              border: OutlineInputBorder(),
-            ),
+          const SizedBox(height: 12),
+          _field(
+            date,
+            'તારીખ',
+            Icons.calendar_month,
           ),
-
-          const SizedBox(height: 15),
-
-          const TextField(
-            decoration: InputDecoration(
-              labelText: 'કારીગર',
-              border: OutlineInputBorder(),
-            ),
+          _field(
+            worker,
+            'કારીગર',
+            Icons.person,
           ),
-
-          const SizedBox(height: 15),
-
-          TextField(
-            controller: diamondsController,
-            keyboardType: TextInputType.number,
-            onChanged: (_) => calculate(),
-            decoration: const InputDecoration(
-              labelText: 'હીરા',
-              border: OutlineInputBorder(),
-            ),
+          _field(
+            diamonds,
+            'હીરા',
+            Icons.diamond,
+            type: TextInputType.number,
           ),
-
-          const SizedBox(height: 15),
-
-          TextField(
-            controller: rateController,
-            keyboardType: TextInputType.number,
-            onChanged: (_) => calculate(),
-            decoration: const InputDecoration(
-              labelText: 'ભાવ',
-              border: OutlineInputBorder(),
-            ),
+          _field(
+            rate,
+            'ભાવ',
+            Icons.currency_rupee,
+            type: TextInputType.number,
           ),
-
-          const SizedBox(height: 20),
-
           Card(
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Text(
-                'કુલ કામ = ₹${total.toStringAsFixed(2)}',
+            child: ListTile(
+              title: const Text('કુલ કામ'),
+              trailing: Text(
+                '₹${total.toStringAsFixed(2)}',
                 style: const TextStyle(
-                  fontSize: 22,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
           ),
-
-          const SizedBox(height: 15),
-
           ElevatedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('કામ Save થયું'),
-                ),
-              );
-            },
+            onPressed: save,
             icon: const Icon(Icons.save),
             label: const Text('Save'),
           ),
@@ -485,9 +507,28 @@ class _WorkPageState extends State<WorkPage> {
       ),
     );
   }
-}
 
-// ================= WITHDRAWAL =================
+  Widget _field(
+    TextEditingController controller,
+    String label,
+    IconData icon, {
+    TextInputType? type,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: controller,
+        keyboardType: type,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon),
+          border: const OutlineInputBorder(),
+        ),
+        onChanged: (_) => setState(() {}),
+      ),
+    );
+  }
+}
 
 class WithdrawalPage extends StatefulWidget {
   const WithdrawalPage({super.key});
@@ -497,16 +538,36 @@ class WithdrawalPage extends StatefulWidget {
       _WithdrawalPageState();
 }
 
-class _WithdrawalPageState extends State<WithdrawalPage> {
+class _WithdrawalPageState
+    extends State<WithdrawalPage> {
   String type = 'તળીયા';
+
+  final worker = TextEditingController();
+  final date = TextEditingController();
+  final amount = TextEditingController();
+
+  @override
+  void dispose() {
+    worker.dispose();
+    date.dispose();
+    amount.dispose();
+    super.dispose();
+  }
+
+  void save() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('ઉપાડ સેવ થયો'),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ઉપાડ'),
+        title: const Text('💰 ઉપાડ'),
       ),
-
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -531,51 +592,30 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
               ),
             ],
             onChanged: (value) {
-              setState(() {
-                type = value!;
-              });
+              if (value != null) {
+                setState(() => type = value);
+              }
             },
           ),
-
-          const SizedBox(height: 15),
-
-          const TextField(
-            decoration: InputDecoration(
-              labelText: 'કારીગર',
-              border: OutlineInputBorder(),
-            ),
+          const SizedBox(height: 12),
+          _field(
+            worker,
+            'કારીગર',
+            Icons.person,
           ),
-
-          const SizedBox(height: 15),
-
-          const TextField(
-            decoration: InputDecoration(
-              labelText: 'તારીખ',
-              border: OutlineInputBorder(),
-            ),
+          _field(
+            date,
+            'તારીખ',
+            Icons.calendar_month,
           ),
-
-          const SizedBox(height: 15),
-
-          const TextField(
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'ઉપાડ',
-              prefixText: '₹ ',
-              border: OutlineInputBorder(),
-            ),
+          _field(
+            amount,
+            'ઉપાડ',
+            Icons.currency_rupee,
+            type: TextInputType.number,
           ),
-
-          const SizedBox(height: 20),
-
           ElevatedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('ઉપાડ Save થયો'),
-                ),
-              );
-            },
+            onPressed: save,
             icon: const Icon(Icons.save),
             label: const Text('Save'),
           ),
@@ -583,102 +623,97 @@ class _WithdrawalPageState extends State<WithdrawalPage> {
       ),
     );
   }
+
+  Widget _field(
+    TextEditingController controller,
+    String label,
+    IconData icon, {
+    TextInputType? type,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: controller,
+        keyboardType: type,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon),
+          border: const OutlineInputBorder(),
+        ),
+      ),
+    );
+  }
 }
 
-// ================= SUMMARY =================
-
 class SummaryPage extends StatelessWidget {
-  final String type;
+  final String title;
 
   const SummaryPage({
     super.key,
-    required this.type,
+    required this.title,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(type),
-      ),
-
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Card(
-            child: ListTile(
-              leading: const Icon(
-                Icons.work,
-                color: Colors.green,
-              ),
-              title: const Text('કુલ કામ'),
-              trailing: const Text(
-                '₹0',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
           ),
-
-          Card(
-            child: ListTile(
-              leading: const Icon(
-                Icons.payments,
-                color: Colors.deepPurple,
-              ),
-              title: const Text('કુલ ઉપાડ'),
-              trailing: const Text(
-                '₹0',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+        ),
+        const SizedBox(height: 12),
+        _summaryCard(
+          'કુલ કામ',
+          '₹0.00',
+          Icons.work,
+        ),
+        _summaryCard(
+          'કુલ ઉપાડ',
+          '₹0.00',
+          Icons.payments,
+        ),
+        _summaryCard(
+          'બાકી',
+          '₹0.00',
+          Icons.account_balance_wallet,
+        ),
+        const SizedBox(height: 12),
+        const Card(
+          child: ListTile(
+            leading: Icon(Icons.date_range),
+            title: Text('Date-wise History'),
+            subtitle: Text(
+              'કામ અને ઉપાડની તારીખવાર માહિતી અહીં દેખાશે',
             ),
+            trailing: Icon(Icons.edit),
           ),
+        ),
+      ],
+    );
+  }
 
-          Card(
-            color: Colors.blue.shade50,
-            child: const ListTile(
-              title: Text(
-                'બાકી કામ',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              trailing: Text(
-                '₹0',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+  Widget _summaryCard(
+    String title,
+    String value,
+    IconData icon,
+  ) {
+    return Card(
+      child: ListTile(
+        leading: CircleAvatar(
+          child: Icon(icon),
+        ),
+        title: Text(title),
+        trailing: Text(
+          value,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
           ),
-
-          const SizedBox(height: 20),
-
-          const Text(
-            'તારીખ પ્રમાણે હિસાબ',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          const Card(
-            child: ListTile(
-              title: Text('હજુ કોઈ રેકોર્ડ નથી'),
-              subtitle: Text(
-                'Dashboardમાંથી કામ અથવા ઉપાડ Save કરો.',
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
